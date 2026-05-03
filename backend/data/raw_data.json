@@ -2,28 +2,48 @@
   "messages": [
     {
       "id": "msg_001",
-      "sender": "client",
+      "sender": "Susan",
+      "role": "client",
       "content": "Hey, our pipeline run failed again this morning around 4am UTC. Same OOM error as last week. Can you take a look when you get a chance?",
       "channel": "acme-corp",
       "timestamp": "2026-05-01T09:12:43Z"
     },
     {
+      "id": "msg_001a",
+      "sender": "Susan",
+      "role": "client",
+      "content": "Adding more context — looks like it died on the embedding step again, run id `run_88f2c`. Logs show the worker getting killed right after batch 14.",
+      "channel": "acme-corp",
+      "timestamp": "2026-05-01T09:18:02Z"
+    },
+    {
+      "id": "msg_001b",
+      "sender": "Ben",
+      "role": "client",
+      "content": "And one more — this is the third time this week, so we're starting to get pinged by our internal users. Bumping priority on our side.",
+      "channel": "acme-corp",
+      "timestamp": "2026-05-01T09:21:37Z"
+    },
+    {
       "id": "msg_002",
       "sender": "You",
+      "role": "engineer",
       "content": "Looking into it now. I bumped the worker memory to 16GB last Friday but it looks like the new batch size is pushing past that. Going to profile the embedding step and report back this afternoon.",
       "channel": "acme-corp",
       "timestamp": "2026-05-01T09:24:11Z"
     },
     {
       "id": "msg_003",
-      "sender": "client",
+      "sender": "Ben",
+      "role": "client",
       "content": "Appreciate it. Also FYI legal is asking whether we can route PII through the redaction service before it hits your model. Is that something we can turn on per-tenant?",
       "channel": "acme-corp",
       "timestamp": "2026-05-01T09:31:02Z"
     },
     {
       "id": "msg_004",
-      "sender": "client",
+      "sender": "Marcus",
+      "role": "client",
       "content": "Quick one — the dashboard is showing zero events for our prod tenant since last night's deploy. Staging looks fine. Anyone around?",
       "channel": "globex-deployment",
       "timestamp": "2026-05-02T14:47:55Z"
@@ -31,13 +51,15 @@
     {
       "id": "msg_005",
       "sender": "You",
+      "role": "engineer",
       "content": "On it. Looks like the prod ingestion key rotated but the new value didn't propagate to the edge workers. Rolling out the updated secret now, ETA 5 min.",
       "channel": "globex-deployment",
       "timestamp": "2026-05-02T14:51:09Z"
     },
     {
       "id": "msg_006",
-      "sender": "client",
+      "sender": "Priya",
+      "role": "client",
       "content": "We're seeing intermittent 502s from the /v2/score endpoint, maybe 3% of traffic. Started about an hour ago. No alert fired on our side — wanted to flag before it gets worse.",
       "channel": "initech-support",
       "timestamp": "2026-05-03T11:08:22Z"
@@ -45,16 +67,26 @@
     {
       "id": "msg_007",
       "sender": "You",
+      "role": "engineer",
       "content": "Thanks for flagging. I see the same pattern on our metrics — one of three replicas is failing health checks intermittently. Draining it now and spinning up a replacement. Will follow up with a postmortem once we have root cause.",
       "channel": "initech-support",
       "timestamp": "2026-05-03T11:15:47Z"
     },
     {
       "id": "msg_008",
-      "sender": "client",
+      "sender": "Tom",
+      "role": "client",
       "content": "Following up on the contract renewal — our procurement team needs the SOC2 report and a signed DPA before they can sign off. Can you point me to those?",
       "channel": "initech-support",
       "timestamp": "2026-05-03T16:42:18Z"
+    },
+    {
+      "id": "msg_009",
+      "sender": "Dana",
+      "role": "client",
+      "content": "Two things in one — the /v2/exports endpoint is timing out on anything above ~50k rows, our nightly sync has been failing for two days now. Also, while you're in there, any chance we could add a date-range filter on that endpoint? Would save us a ton of post-processing on our side.",
+      "channel": "vandelay-pilot",
+      "timestamp": "2026-05-03T17:05:11Z"
     }
   ]
 }
