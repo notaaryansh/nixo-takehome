@@ -1,0 +1,21 @@
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Tooling droppings
+.gstack/
+.DS_Store
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/

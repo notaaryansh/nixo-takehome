@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+:root {
+  /* Nixo dark palette */
+  --bg: #0A0A0B;
+  --bg-elevated: #131316;
+  --surface: #1B1F23;
+  --surface-hover: #22262B;
+  --border: #25282E;
+  --border-strong: #34383F;
+
+  --text: #ECECEE;
+  --text-muted: #9094A0;
+  --text-dim: #6B7080;
+
+  /* Brand */
+  --accent: #C4287E;
+  --accent-soft: #E85AA8;
+  --accent-bg: rgba(196, 40, 126, 0.12);
+
+  /* Risk */
+  --risk-low: #4ADE80;
+  --risk-low-bg: rgba(74, 222, 128, 0.10);
+  --risk-med: #F5C04A;
+  --risk-med-bg: rgba(245, 192, 74, 0.10);
+  --risk-high: #F2545B;
+  --risk-high-bg: rgba(242, 84, 91, 0.10);
+
+  /* Stage tints */
+  --stage-discovery: #B6E3F4;
+  --stage-progress: #C0AEDE;
+  --stage-review: #FFE0B2;
+  --stage-approved: #C0F0E8;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-dim: var(--text-dim);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-bg: var(--accent-bg);
+  --color-risk-low: var(--risk-low);
+  --color-risk-low-bg: var(--risk-low-bg);
+  --color-risk-med: var(--risk-med);
+  --color-risk-med-bg: var(--risk-med-bg);
+  --color-risk-high: var(--risk-high);
+  --color-risk-high-bg: var(--risk-high-bg);
+  --color-stage-discovery: var(--stage-discovery);
+  --color-stage-progress: var(--stage-progress);
+  --color-stage-review: var(--stage-review);
+  --color-stage-approved: var(--stage-approved);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "cv11", "ss01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: var(--accent-bg);
+  color: var(--text);
+}
+
+/* Subtle scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
