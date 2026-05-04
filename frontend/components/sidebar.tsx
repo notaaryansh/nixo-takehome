@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, MessagesSquare, Settings } from "lucide-react";
+import { LayoutDashboard, MessagesSquare } from "lucide-react";
 
 const items = [
   {
@@ -24,23 +24,7 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-screen w-[220px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--bg-elevated)]">
-      <div className="flex items-center gap-2 px-3 py-3">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--accent)] text-[12px] font-bold text-white">
-          N
-        </div>
-        <div className="flex flex-1 flex-col leading-tight">
-          <span className="text-[12.5px] font-medium text-[var(--text)]">Nixo Health</span>
-          <span className="text-[10.5px] text-[var(--text-dim)]">Forward Deployed</span>
-        </div>
-        <button
-          aria-label="Settings"
-          className="rounded-md p-1 text-[var(--text-dim)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-muted)]"
-        >
-          <Settings size={14} />
-        </button>
-      </div>
-
-      <nav className="px-2 pt-2">
+      <nav className="px-2 pt-3">
         <div className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
           View
         </div>

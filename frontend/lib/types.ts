@@ -24,6 +24,16 @@ export type Message = {
   ts: string; // ISO
 };
 
+export type TicketFeatures = {
+  messages: number; // 0-3 (deterministic — bucketed message count)
+  people: number; // 0-3 (deterministic — bucketed distinct senders)
+  urgency: number; // 0-3 (LLM)
+  consequence: number; // 0-3 (LLM)
+  sentiment: number; // 0-3 (LLM)
+  severityScore: number; // 0-15 (sum)
+  severityLabel: Severity;
+};
+
 export type Ticket = {
   id: string;
   customerId: string;
@@ -37,6 +47,7 @@ export type Ticket = {
   updatedAt: string;
   messages: Message[];
   nextStep: string;
+  features: TicketFeatures | null;
 };
 
 export type Customer = {

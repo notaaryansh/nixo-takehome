@@ -2,14 +2,16 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  AlertTriangle,
   ClipboardList,
   Clock,
   MessageSquare,
 } from "lucide-react";
-import type { Customer, Ticket } from "@/lib/types";
+import type { Customer, Ticket, TicketFeatures } from "@/lib/types";
+import { NOT_IMPLEMENTED } from "@/lib/api";
 import { StatusPill } from "./status-pill";
+import { SeverityPill } from "./severity-pill";
 import { MessageSnapshot } from "./message-snapshot";
+import { NotImplemented } from "./not-implemented";
 import { formatRelativeTime } from "@/lib/format";
 
 const severityDot: Record<Ticket["severity"], { dot: string; label: string }> = {
@@ -33,6 +35,8 @@ export function TicketDetail({
   const sortedMessages = [...ticket.messages].sort(
     (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime(),
   );
+  const nextStepNotImpl = ticket.nextStep === NOT_IMPLEMENTED;
+  const severityNotImpl = ticket.features === null;
 
   return (
     <div className="flex h-full flex-col">
@@ -73,13 +77,17 @@ export function TicketDetail({
               <StatusPill status={ticket.status} />
             </div>
             <div className="mt-1.5 flex items-center gap-3 text-[11.5px] text-[var(--text-muted)]">
-              <span
-                className={`inline-flex items-center gap-1.5`}
-                title={sev.label}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${sev.dot}`} />
-                {sev.label}
-              </span>
+              {severityNotImpl ? (
+                <NotImplemented label="severity" />
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1.5"
+                  title={sev.label}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${sev.dot}`} />
+                  {sev.label}
+                </span>
+              )}
               <span className="text-[var(--text-dim)]">·</span>
               <span className="inline-flex items-center gap-1">
                 <Clock size={11} /> {ageDisplay} old
@@ -88,14 +96,6 @@ export function TicketDetail({
               <span className="inline-flex items-center gap-1">
                 <MessageSquare size={11} /> {ticket.messages.length} messages
               </span>
-              {ticket.stalled && (
-                <>
-                  <span className="text-[var(--text-dim)]">·</span>
-                  <span className="inline-flex items-center gap-1 text-[var(--risk-high)]">
-                    <AlertTriangle size={11} /> stalled
-                  </span>
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -114,7 +114,7 @@ export function TicketDetail({
             icon={<ArrowRight size={13} />}
             label="Suggested next step"
             body={ticket.nextStep}
-            accent
+            accent={!nextStepNotImpl}
           />
           <div className="rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] p-3">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
@@ -135,7 +135,13 @@ export function TicketDetail({
                 <StatusPill status={ticket.status} />
               </dd>
               <dt className="text-[var(--text-dim)]">Severity</dt>
-              <dd className="text-[var(--text)]">{sev.label}</dd>
+              <dd>
+                {severityNotImpl ? (
+                  <NotImplemented label="severity" />
+                ) : (
+                  <SeverityPill severity={ticket.severity} />
+                )}
+              </dd>
               <dt className="text-[var(--text-dim)]">Created</dt>
               <dd className="text-[var(--text)]">
                 {formatRelativeTime(ticket.createdAt)}
@@ -146,6 +152,10 @@ export function TicketDetail({
               </dd>
             </dl>
           </div>
+
+          {ticket.features && (
+            <SeverityBreakdown features={ticket.features} />
+          )}
         </div>
 
         {/* right: source of truth */}
@@ -178,6 +188,49 @@ export function TicketDetail({
   );
 }
 
+function FeaturePills({
+  label,
+  value,
+  max,
+}: {
+  label: string;
+  value: number;
+  max: number;
+}) {
+  return (
+    <div>
+      <div className="text-[10.5px] text-[var(--text-muted)]">{label}</div>
+      <div className="mt-1.5 flex gap-1">
+        {Array.from({ length: max }).map((_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 flex-1 rounded-full transition-colors ${
+              i < value ? "bg-[var(--accent)]" : "bg-[var(--surface)]"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SeverityBreakdown({ features }: { features: TicketFeatures }) {
+  return (
+    <div className="rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] p-3">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
+        Severity breakdown
+      </div>
+      <div className="mt-3 flex flex-col gap-2.5">
+        <FeaturePills label="Urgency" value={features.urgency} max={3} />
+        <FeaturePills label="Impact" value={features.consequence} max={3} />
+        <FeaturePills label="Sentiment" value={features.sentiment} max={3} />
+        <FeaturePills label="Frequency" value={features.messages} max={3} />
+        <FeaturePills label="Escalation" value={features.people} max={3} />
+      </div>
+    </div>
+  );
+}
+
 function InsightCard({
   icon,
   label,
@@ -189,6 +242,7 @@ function InsightCard({
   body: string;
   accent?: boolean;
 }) {
+  const notImpl = body === NOT_IMPLEMENTED;
   return (
     <div
       className={`rounded-md border p-3 ${
@@ -205,7 +259,13 @@ function InsightCard({
         {icon}
         {label}
       </div>
-      <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--text)]">{body}</p>
+      <div className="mt-1.5">
+        {notImpl ? (
+          <NotImplemented />
+        ) : (
+          <p className="text-[12px] leading-relaxed text-[var(--text)]">{body}</p>
+        )}
+      </div>
     </div>
   );
 }

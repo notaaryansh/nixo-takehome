@@ -1,17 +1,11 @@
 import Link from "next/link";
-import { ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { Customer } from "@/lib/types";
+import { NOT_IMPLEMENTED } from "@/lib/api";
 import { RiskBadge } from "./risk-badge";
 import { CustomerAvatar } from "./customer-avatar";
+import { NotImplemented } from "./not-implemented";
 import { formatRelativeTime } from "@/lib/format";
-
-const TrendIcon = ({ trend }: { trend: Customer["trend"] }) => {
-  if (trend === "up")
-    return <TrendingUp size={12} className="text-[var(--risk-high)]" />;
-  if (trend === "down")
-    return <TrendingDown size={12} className="text-[var(--risk-low)]" />;
-  return <Minus size={12} className="text-[var(--text-dim)]" />;
-};
 
 export function CustomerList({ customers }: { customers: Customer[] }) {
   return (
@@ -24,7 +18,9 @@ export function CustomerList({ customers }: { customers: Customer[] }) {
         <span />
       </div>
 
-      {customers.map((c) => (
+      {customers.map((c) => {
+        const riskNotImpl = c.riskExplanation === NOT_IMPLEMENTED;
+        return (
         <Link
           key={c.id}
           href={`/customers/${c.id}`}
@@ -37,19 +33,23 @@ export function CustomerList({ customers }: { customers: Customer[] }) {
                 <span className="truncate text-[13px] font-medium text-[var(--text)]">
                   {c.name}
                 </span>
-                <span className="rounded border border-[var(--border)] px-1 py-0 text-[9.5px] uppercase tracking-wider text-[var(--text-dim)]">
-                  {c.plan}
-                </span>
               </div>
               <p className="mt-0.5 truncate text-[11.5px] text-[var(--text-muted)]">
-                {c.riskExplanation}
+                {riskNotImpl ? (
+                  <NotImplemented label="risk explanation" />
+                ) : (
+                  c.riskExplanation
+                )}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <RiskBadge level={c.risk} />
-            <TrendIcon trend={c.trend} />
+            {riskNotImpl ? (
+              <NotImplemented label="risk" />
+            ) : (
+              <RiskBadge level={c.risk} />
+            )}
           </div>
 
           <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
@@ -87,7 +87,8 @@ export function CustomerList({ customers }: { customers: Customer[] }) {
             className="text-[var(--text-dim)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--text-muted)]"
           />
         </Link>
-      ))}
+        );
+      })}
     </div>
   );
 }

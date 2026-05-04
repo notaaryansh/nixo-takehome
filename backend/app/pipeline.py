@@ -1,15 +1,97 @@
+import asyncio
 import json
+from datetime import datetime, timezone
 
 from . import prompts
 from .ai import call_llm
-from .models import Event, EventStatus
+from .models import (
+    CustomerRisk,
+    Event,
+    EventStatus,
+    Message,
+    SeverityLabel,
+    TicketFeatures,
+)
 from .store import store
 
 
-def assign_status(event: Event) -> EventStatus | None:
+def _parse_ts(ts: str) -> datetime:
+    return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+
+def _ago(ts: str, now: datetime) -> str:
+    delta = now - _parse_ts(ts)
+    secs = int(delta.total_seconds())
+    if secs < 60:
+        return f"{secs}s ago"
+    mins = secs // 60
+    if mins < 60:
+        return f"{mins}m ago"
+    hrs = mins // 60
+    if hrs < 24:
+        return f"{hrs}h ago"
+    days = hrs // 24
+    return f"{days}d ago"
+
+
+def _dataset_now() -> datetime:
+    if not store.messages:
+        return datetime.now(timezone.utc)
+    latest = max(store.messages, key=lambda m: m.timestamp)
+    return _parse_ts(latest.timestamp)
+
+
+# ---------- deterministic feature scoring ----------
+
+
+def _bucket_messages(n: int) -> int:
+    # Calibrated so 2 messages already shows persistence and 3+ is a clear pattern.
+    if n <= 1:
+        return 0
+    if n == 2:
+        return 1
+    if n == 3:
+        return 2
+    return 3
+
+
+def _bucket_people(n: int) -> int:
+    # Going from 1 person to 2 is a big jump (someone else cared enough to chime in),
+    # so we skip the mild middle and land 2 people at score 2.
+    if n <= 1:
+        return 0
+    if n == 2:
+        return 2
+    return 3
+
+
+def calculate_severity(
+    messages: int,
+    people: int,
+    urgency: int,
+    consequence: int,
+    sentiment: int,
+) -> tuple[int, SeverityLabel]:
+    score = messages + people + urgency + consequence + sentiment
+    # escape hatches: a single critical signal forces high, even if other axes are quiet.
+    if consequence == 3 or sentiment == 3:
+        return score, "high"
+    if score >= 8:
+        label: SeverityLabel = "high"
+    elif score >= 4:
+        label = "medium"
+    else:
+        label = "low"
+    return score, label
+
+
+# ---------- LLM calls ----------
+
+
+async def assign_status(event: Event) -> tuple[EventStatus | None, str | None]:
     context = store.get_context(event.message_ids, window=5)
     if not context:
-        return None
+        return None, None
 
     relevant_set = set(event.message_ids)
     thread_lines = []
@@ -30,16 +112,59 @@ def assign_status(event: Event) -> EventStatus | None:
         f"{', '.join(event.message_ids)}\n\n"
         f"Context (chronological — event messages are marked):\n{thread}"
     )
-    raw = call_llm(
+    raw = await call_llm(
         prompt=prompt,
         system=prompts.ASSIGN_STATUS,
         response_format={"type": "json_object"},
     )
     parsed = json.loads(raw)
-    return parsed.get("status")
+    return parsed.get("status"), parsed.get("next_step")
 
 
-def extract_events_for_channel(channel: str) -> list[Event]:
+async def extract_features(event: Event) -> TicketFeatures:
+    event_msgs = [
+        m for m in store.messages if m.id in event.message_ids and m.role == "client"
+    ]
+    msg_count = len(event_msgs)
+    people_count = len({m.sender for m in event_msgs})
+
+    thread = "\n".join(
+        f"[{m.id} | {m.timestamp}] {m.sender}: {m.content}"
+        for m in sorted(event_msgs, key=lambda m: m.timestamp)
+    )
+    prompt = (
+        f"Ticket:\n"
+        f"  type: {event.type}\n"
+        f"  heading: {event.heading}\n"
+        f"  summary: {event.summary}\n\n"
+        f"Client messages on this ticket:\n{thread}"
+    )
+    raw = await call_llm(
+        prompt=prompt,
+        system=prompts.EXTRACT_TICKET_FEATURES,
+        response_format={"type": "json_object"},
+    )
+    parsed = json.loads(raw)
+    messages_score = _bucket_messages(msg_count)
+    people_score = _bucket_people(people_count)
+    urgency = int(parsed.get("urgency", 0))
+    consequence = int(parsed.get("consequence", 0))
+    sentiment = int(parsed.get("sentiment", 0))
+    score, label = calculate_severity(
+        messages_score, people_score, urgency, consequence, sentiment
+    )
+    return TicketFeatures(
+        messages=messages_score,
+        people=people_score,
+        urgency=urgency,
+        consequence=consequence,
+        sentiment=sentiment,
+        severity_score=score,
+        severity_label=label,
+    )
+
+
+async def extract_events_for_channel(channel: str) -> list[Event]:
     messages = store.get_messages(channel=channel, role="client")
     if not messages:
         return []
@@ -49,7 +174,7 @@ def extract_events_for_channel(channel: str) -> list[Event]:
     )
     prompt = f"Channel: #{channel}\n\nClient messages:\n{thread}"
 
-    raw = call_llm(
+    raw = await call_llm(
         prompt=prompt,
         system=prompts.EXTRACT_EVENTS,
         response_format={"type": "json_object"},
@@ -79,12 +204,86 @@ def extract_events_for_channel(channel: str) -> list[Event]:
     return events
 
 
-def extract_events_for_all_channels() -> list[Event]:
+async def _enrich_event(event: Event) -> None:
+    status_task = assign_status(event)
+    features_task = extract_features(event)
+    (status, next_step), features = await asyncio.gather(status_task, features_task)
+    event.status = status
+    event.next_step = next_step
+    event.features = features
+
+
+async def extract_events_for_all_channels() -> list[Event]:
     channels = sorted({m.channel for m in store.get_messages()})
-    all_events: list[Event] = []
-    for channel in channels:
-        events = extract_events_for_channel(channel)
-        for e in events:
-            e.status = assign_status(e)
-        all_events.extend(events)
+    channel_events = await asyncio.gather(
+        *[extract_events_for_channel(c) for c in channels]
+    )
+    all_events = [e for sublist in channel_events for e in sublist]
+    await asyncio.gather(*[_enrich_event(e) for e in all_events])
     return all_events
+
+
+def _channel_display_name(channel: str) -> str:
+    return " ".join(part.capitalize() for part in channel.replace("_", "-").split("-"))
+
+
+async def synthesize_customer(channel: str) -> CustomerRisk | None:
+    events = store.get_events(channel)
+    messages = store.get_messages(channel=channel)
+    if not events and not messages:
+        return None
+
+    now = _dataset_now()
+
+    def fmt_msg(m: Message) -> str:
+        return f"  {m.sender} ({_ago(m.timestamp, now)}): {m.content}"
+
+    ticket_blocks: list[str] = []
+    for e in sorted(events, key=lambda x: x.timestamp):
+        ticket_msgs = sorted(
+            (m for m in messages if m.id in e.message_ids),
+            key=lambda m: m.timestamp,
+        )
+        last_ticket_ts = (
+            max(m.timestamp for m in ticket_msgs) if ticket_msgs else e.timestamp
+        )
+        block = (
+            f"  - [{e.status} | {e.type} | {_ago(e.timestamp, now)} | "
+            f"last activity {_ago(last_ticket_ts, now)}] \"{e.heading}\"\n"
+            f"      {e.summary}\n"
+            f"      Messages:\n"
+            + "\n".join(f"      {fmt_msg(m)}" for m in ticket_msgs)
+        )
+        ticket_blocks.append(block)
+
+    client_count = sum(1 for m in messages if m.role == "client")
+    engineer_count = sum(1 for m in messages if m.role == "engineer")
+
+    user_msg = (
+        f"Customer: {_channel_display_name(channel)}\n"
+        f"Channel: #{channel}\n\n"
+        f"Tickets:\n"
+        + ("\n".join(ticket_blocks) if ticket_blocks else "  (none)")
+        + f"\n\nRecent activity: {client_count} client message"
+        f"{'' if client_count == 1 else 's'}, {engineer_count} engineer "
+        f"message{'' if engineer_count == 1 else 's'} in this channel."
+    )
+
+    raw = await call_llm(
+        prompt=user_msg,
+        system=prompts.SYNTHESIZE_CUSTOMER_RISK,
+        response_format={"type": "json_object"},
+    )
+    parsed = json.loads(raw)
+    return CustomerRisk(channel=channel, **parsed)
+
+
+async def synthesize_all_customers() -> list[CustomerRisk]:
+    channels = sorted({m.channel for m in store.get_messages()})
+    results = await asyncio.gather(*[synthesize_customer(c) for c in channels])
+    risks: list[CustomerRisk] = []
+    for channel, risk in zip(channels, results):
+        if risk is not None:
+            store.set_customer_risk(channel, risk)
+            risks.append(risk)
+    return risks

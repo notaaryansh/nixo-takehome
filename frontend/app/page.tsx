@@ -1,84 +1,133 @@
 import { CustomerList } from "@/components/customer-list";
-import { getCustomers } from "@/lib/fixtures";
-import { AlertTriangle, Activity, CheckCircle2 } from "lucide-react";
+import { RunButton } from "@/components/run-button";
+import {
+  apiGetChannels,
+  apiGetEvents,
+  apiGetMessages,
+  apiGetRisks,
+  buildCustomers,
+} from "@/lib/api";
 
-export default function Home() {
-  const customers = getCustomers();
-  const high = customers.filter((c) => c.risk === "high").length;
-  const medium = customers.filter((c) => c.risk === "medium").length;
-  const low = customers.filter((c) => c.risk === "low").length;
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const nowMs = Date.now();
+  let error: string | null = null;
+  let channels: string[] = [];
+  let events: Awaited<ReturnType<typeof apiGetEvents>> = [];
+  let messages: Awaited<ReturnType<typeof apiGetMessages>> = [];
+  let risks: Awaited<ReturnType<typeof apiGetRisks>> = [];
+
+  try {
+    [channels, events, messages, risks] = await Promise.all([
+      apiGetChannels(),
+      apiGetEvents(),
+      apiGetMessages(),
+      apiGetRisks(),
+    ]);
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+  }
+
+  const customerData = buildCustomers(channels, events, messages, nowMs, risks);
+  const customers = customerData.map((c) => c.customer);
+  const totalEvents = events.length;
+  const eventsRun = totalEvents > 0;
+
+  const hour = new Date().getHours();
+  const partOfDay =
+    hour < 5
+      ? "evening"
+      : hour < 12
+        ? "morning"
+        : hour < 18
+          ? "afternoon"
+          : "evening";
+  const greeting = `Good ${partOfDay}, Priya`;
+
+  const totals = customers.reduce(
+    (acc, c) => ({
+      needs_reply: acc.needs_reply + c.ticketCounts.needs_reply,
+      active: acc.active + c.ticketCounts.active,
+      waiting_customer: acc.waiting_customer + c.ticketCounts.waiting_customer,
+      resolved: acc.resolved + c.ticketCounts.resolved,
+    }),
+    { needs_reply: 0, active: 0, waiting_customer: 0, resolved: 0 },
+  );
+  const openCount = totals.needs_reply + totals.active + totals.waiting_customer;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
         <div>
-          <h1 className="text-[15px] font-semibold text-[var(--text)]">All customers</h1>
-          <p className="mt-0.5 text-[11.5px] text-[var(--text-muted)]">
-            Sorted by risk score · {customers.length} accounts
-          </p>
+          <h1 className="text-[15px] font-semibold text-[var(--text)]">
+            {greeting}
+          </h1>
+          {customers.length > 0 && (
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-[var(--text-muted)]">
+              <span>
+                {customers.length} customer{customers.length === 1 ? "" : "s"}
+              </span>
+              {openCount > 0 ? (
+                <>
+                  <span className="text-[var(--text-dim)]">·</span>
+                  {totals.needs_reply > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-[var(--risk-high)]">●</span>
+                      {totals.needs_reply} needs reply
+                    </span>
+                  )}
+                  {totals.active > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-[#3B82F6]">●</span>
+                      {totals.active} active
+                    </span>
+                  )}
+                  {totals.waiting_customer > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-[var(--risk-med)]">●</span>
+                      {totals.waiting_customer} waiting
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span className="text-[var(--text-dim)]">·</span>
+                  <span>No open tickets</span>
+                </>
+              )}
+            </p>
+          )}
         </div>
-        <div className="flex gap-2">
-          <button className="rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5 text-[11.5px] text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]">
-            Filter
-          </button>
-          <button className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-medium text-white hover:bg-[var(--accent-soft)]">
-            New simulation
-          </button>
-        </div>
+        <RunButton />
       </div>
 
-      <div className="grid grid-cols-3 gap-3 px-6 py-4">
-        <MetricCard
-          icon={<AlertTriangle size={13} className="text-[var(--risk-high)]" />}
-          label="High risk"
-          value={high}
-          accent="high"
-        />
-        <MetricCard
-          icon={<Activity size={13} className="text-[var(--risk-med)]" />}
-          label="Medium risk"
-          value={medium}
-        />
-        <MetricCard
-          icon={<CheckCircle2 size={13} className="text-[var(--risk-low)]" />}
-          label="Healthy"
-          value={low}
-        />
-      </div>
+      {error && (
+        <div className="mx-6 mt-4 rounded-md border border-[var(--risk-high)]/40 bg-[var(--risk-high-bg)] px-3 py-2 text-[11.5px] text-[var(--risk-high)]">
+          Backend unreachable: {error}
+        </div>
+      )}
 
-      <div className="px-6 pb-6">
-        <CustomerList customers={customers} />
+      <div className="px-6 py-6">
+        {customers.length === 0 ? (
+          <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-[var(--border)] text-[12px] text-[var(--text-dim)]">
+            {error
+              ? "Couldn’t load data from backend."
+              : "No customers yet. Click Run pipeline to extract events."}
+          </div>
+        ) : (
+          <>
+            {!eventsRun && (
+              <p className="mb-3 text-[11.5px] text-[var(--text-dim)]">
+                Channels loaded but no events yet — click Run pipeline to
+                extract them.
+              </p>
+            )}
+            <CustomerList customers={customers} />
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function MetricCard({
-  icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  accent?: "high";
-}) {
-  return (
-    <div
-      className={`rounded-lg border p-4 ${
-        accent === "high"
-          ? "border-[var(--risk-high)]/30 bg-[var(--risk-high-bg)]"
-          : "border-[var(--border)] bg-[var(--bg-elevated)]"
-      }`}
-    >
-      <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
-        {icon}
-        {label}
-      </div>
-      <div className="mt-2 text-[24px] font-semibold leading-none text-[var(--text)]">
-        {value}
-      </div>
-    </div>
-  );
-}

@@ -2,24 +2,24 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-_client: OpenAI | None = None
+_client: AsyncOpenAI | None = None
 
 
-def _get_client() -> OpenAI:
+def _get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY not set in environment")
-        _client = OpenAI(api_key=api_key)
+        _client = AsyncOpenAI(api_key=api_key)
     return _client
 
 
-def call_llm(
+async def call_llm(
     prompt: str,
     system: str | None = None,
     model: str = "gpt-4o-mini",
@@ -34,5 +34,5 @@ def call_llm(
     if response_format:
         kwargs["response_format"] = response_format
 
-    response = _get_client().chat.completions.create(**kwargs)
+    response = await _get_client().chat.completions.create(**kwargs)
     return response.choices[0].message.content or ""

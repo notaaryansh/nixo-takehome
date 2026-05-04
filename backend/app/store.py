@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from .models import Event, Message
+from .models import CustomerRisk, Event, Message
 
 DATA_PATH = Path(__file__).parent.parent / "data" / "raw_data.json"
 
@@ -10,6 +10,7 @@ class InMemoryStore:
     def __init__(self) -> None:
         self.messages: list[Message] = []
         self.events: list[Event] = []
+        self.customer_risks: dict[str, CustomerRisk] = {}
 
     def load_messages_from_disk(self, path: Path = DATA_PATH) -> None:
         with path.open() as f:
@@ -63,6 +64,15 @@ class InMemoryStore:
 
     def next_event_id(self) -> str:
         return f"evt_{len(self.events) + 1:03d}"
+
+    def set_customer_risk(self, channel: str, risk: CustomerRisk) -> None:
+        self.customer_risks[channel] = risk
+
+    def get_customer_risk(self, channel: str) -> CustomerRisk | None:
+        return self.customer_risks.get(channel)
+
+    def get_all_customer_risks(self) -> list[CustomerRisk]:
+        return list(self.customer_risks.values())
 
 
 store = InMemoryStore()

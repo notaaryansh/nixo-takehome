@@ -1,6 +1,14 @@
 import { notFound } from "next/navigation";
 import { TicketDetail } from "@/components/ticket-detail";
-import { getCustomer, getTicket } from "@/lib/fixtures";
+import {
+  apiGetChannels,
+  apiGetEvents,
+  apiGetMessages,
+  apiGetRisks,
+  buildCustomers,
+} from "@/lib/api";
+
+export const dynamic = "force-dynamic";
 
 export default async function TicketPage({
   params,
@@ -8,8 +16,24 @@ export default async function TicketPage({
   params: Promise<{ id: string; ticketId: string }>;
 }) {
   const { id, ticketId } = await params;
-  const customer = getCustomer(id);
-  const ticket = getTicket(ticketId);
-  if (!customer || !ticket || ticket.customerId !== id) notFound();
-  return <TicketDetail customer={customer} ticket={ticket} />;
+  const nowMs = Date.now();
+
+  const [channels, events, messages, risks] = await Promise.all([
+    apiGetChannels(),
+    apiGetEvents(),
+    apiGetMessages(),
+    apiGetRisks(),
+  ]);
+
+  if (!channels.includes(id)) notFound();
+
+  const data = buildCustomers(channels, events, messages, nowMs, risks).find(
+    (c) => c.customer.id === id,
+  );
+  if (!data) notFound();
+
+  const ticket = data.tickets.find((t) => t.id === ticketId);
+  if (!ticket) notFound();
+
+  return <TicketDetail customer={data.customer} ticket={ticket} />;
 }

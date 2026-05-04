@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict
 
 from .models import Event, Message
@@ -46,9 +47,19 @@ def print_events() -> None:
             print(f"      channel:     {e.channel}")
             print(f"      timestamp:   {e.timestamp}")
             print(f"      message_ids: {', '.join(e.message_ids)}")
+            if e.next_step:
+                print(f"      next_step:   {e.next_step}")
+            if e.features:
+                f = e.features
+                total = f.messages + f.people + f.urgency + f.consequence + f.sentiment
+                print(
+                    f"      features:    msgs={f.messages} ppl={f.people} "
+                    f"urg={f.urgency} cons={f.consequence} sent={f.sentiment} "
+                    f"(sum={total}/15)"
+                )
 
 
-def main() -> None:
+async def main() -> None:
     print_grouped_by_channel()
     print("\n" + "=" * 60)
     print("CLIENT MESSAGES ONLY (input to LLM)")
@@ -57,9 +68,9 @@ def main() -> None:
     print("\n" + "=" * 60)
     print("EXTRACTING EVENTS")
     print("=" * 60)
-    extract_events_for_all_channels()
+    await extract_events_for_all_channels()
     print_events()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
