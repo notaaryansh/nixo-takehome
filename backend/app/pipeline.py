@@ -92,9 +92,17 @@ def calculate_severity(
     sentiment: int,
 ) -> tuple[int, SeverityLabel]:
     score = messages + people + urgency + consequence + sentiment
-    # escape hatches: a single critical signal forces high, even if other axes are quiet.
-    if consequence == 3 or sentiment == 3:
+
+    # Per-feature escape hatch on the LLM dimensions: any single one at maximum
+    # forces "high" regardless of the rest. Each maps to the loudest threshold
+    # in the prompt:
+    #   urgency=3      → "ASAP / blocking / production down"
+    #   consequence=3  → "production down / data loss / churn risk"
+    #   sentiment=3    → "we're considering alternatives / churn-implying"
+    if urgency == 3 or consequence == 3 or sentiment == 3:
         return score, "high"
+
+    # Otherwise threshold the simple sum.
     if score >= 8:
         label: SeverityLabel = "high"
     elif score >= 4:
