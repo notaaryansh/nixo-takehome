@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { Customer } from "@/lib/types";
-import { NOT_IMPLEMENTED } from "@/lib/api";
 import { RiskBadge } from "./risk-badge";
 import { CustomerAvatar } from "./customer-avatar";
-import { NotImplemented } from "./not-implemented";
 import { formatRelativeTime } from "@/lib/format";
 
 export function CustomerList({ customers }: { customers: Customer[] }) {
@@ -18,9 +16,7 @@ export function CustomerList({ customers }: { customers: Customer[] }) {
         <span />
       </div>
 
-      {customers.map((c) => {
-        const riskNotImpl = c.riskExplanation === NOT_IMPLEMENTED;
-        return (
+      {customers.map((c) => (
         <Link
           key={c.id}
           href={`/customers/${c.id}`}
@@ -29,27 +25,14 @@ export function CustomerList({ customers }: { customers: Customer[] }) {
           <div className="flex items-center gap-3 min-w-0">
             <CustomerAvatar id={c.id} name={c.name} size={28} />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="truncate text-[13px] font-medium text-[var(--text)]">
-                  {c.name}
-                </span>
-              </div>
-              <p className="mt-0.5 truncate text-[11.5px] text-[var(--text-muted)]">
-                {riskNotImpl ? (
-                  <NotImplemented label="risk explanation" />
-                ) : (
-                  c.riskExplanation
-                )}
-              </p>
+              <span className="truncate text-[13px] font-medium text-[var(--text)]">
+                {c.name}
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
-            {riskNotImpl ? (
-              <NotImplemented label="risk" />
-            ) : (
-              <RiskBadge level={c.risk} />
-            )}
+            <RiskBadge level={c.risk} />
           </div>
 
           <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
@@ -72,8 +55,9 @@ export function CustomerList({ customers }: { customers: Customer[] }) {
               </span>
             )}
             {c.ticketCounts.resolved > 0 && (
-              <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 text-[var(--text-dim)]">
-                {c.ticketCounts.resolved} done
+              <span className="rounded bg-[var(--surface)] px-1.5 py-0.5">
+                <span className="text-[var(--risk-low)]">●</span>{" "}
+                {c.ticketCounts.resolved} resolved
               </span>
             )}
           </div>
@@ -87,8 +71,7 @@ export function CustomerList({ customers }: { customers: Customer[] }) {
             className="text-[var(--text-dim)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--text-muted)]"
           />
         </Link>
-        );
-      })}
+      ))}
     </div>
   );
 }

@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { Customer, Ticket } from "@/lib/types";
-import { NOT_IMPLEMENTED } from "@/lib/api";
 import { RiskBadge } from "./risk-badge";
 import { CustomerAvatar } from "./customer-avatar";
-import { NotImplemented } from "./not-implemented";
 import { TicketRow } from "./ticket-row";
 import { formatRelativeTime, statusRank } from "@/lib/format";
 
@@ -22,7 +20,6 @@ export function CustomerDetail({
   });
 
   const stalledCount = tickets.filter((t) => t.stalled).length;
-  const riskNotImpl = customer.riskExplanation === NOT_IMPLEMENTED;
 
   return (
     <div className="flex h-full flex-col">
@@ -59,11 +56,7 @@ export function CustomerDetail({
               </span>
             </div>
             <div className="mt-1.5 flex items-center gap-3 text-[11.5px] text-[var(--text-muted)]">
-              {riskNotImpl ? (
-                <NotImplemented label="risk" />
-              ) : (
-                <RiskBadge level={customer.risk} />
-              )}
+              <RiskBadge level={customer.risk} />
               <span className="text-[var(--text-dim)]">·</span>
               <span>Last activity {formatRelativeTime(customer.lastActivityAt)}</span>
             </div>

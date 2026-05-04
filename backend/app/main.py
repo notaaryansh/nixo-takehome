@@ -55,7 +55,7 @@ async def run_pipeline():
     store.events = []
     store.customer_risks = {}
     events = await extract_events_for_all_channels()
-    risks = await synthesize_all_customers()
+    risks = synthesize_all_customers()
     return PipelineRunResult(events=events, risks=risks)
 
 

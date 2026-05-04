@@ -1,7 +1,6 @@
 import type {
   Customer,
   Message as UIMessage,
-  RiskLevel,
   Ticket,
   TicketStatus,
 } from "./types";
@@ -61,8 +60,6 @@ export type BackendRiskLevel = "low" | "medium" | "high";
 export type BackendCustomerRisk = {
   channel: string;
   risk_level: BackendRiskLevel;
-  explanation: string;
-  most_relevant_signal: { quote: string; author: string; ago: string };
 };
 
 // ---------- fetch helpers ----------
@@ -221,9 +218,6 @@ export const buildChannelSummaries = (
     })
     .sort((a, b) => b.lastTs.localeCompare(a.lastTs));
 
-const riskScoreFor = (level: RiskLevel) =>
-  level === "high" ? 85 : level === "medium" ? 55 : 20;
-
 export const buildCustomers = (
   channels: string[],
   events: BackendEvent[],
@@ -258,24 +252,13 @@ export const buildCustomers = (
         .sort()
         .at(-1) ?? new Date(nowMs).toISOString();
 
-    const recentSignal = risk
-      ? `\u201C${risk.most_relevant_signal.quote}\u201D \u2014 ${risk.most_relevant_signal.author}, ${risk.most_relevant_signal.ago}`
-      : NOT_IMPLEMENTED;
-
     const customer: Customer = {
       id: channel,
       name: channelDisplayName(channel),
       domain: `${channel}.com`,
       plan: "starter",
-      csm: NOT_IMPLEMENTED,
       risk: risk ? risk.risk_level : "medium",
-      riskScore: risk ? riskScoreFor(risk.risk_level) : 0,
-      riskExplanation: risk ? risk.explanation : NOT_IMPLEMENTED,
-      trend: risk ? (risk.risk_level === "high" ? "up" : "flat") : "flat",
-      recentSignal,
-      nextAction: NOT_IMPLEMENTED,
       lastActivityAt,
-      joinedAt: lastActivityAt,
       ticketCounts,
     };
 

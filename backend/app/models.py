@@ -42,14 +42,6 @@ class Event(BaseModel):
     features: TicketFeatures | None = None
 
 
-class MostRelevantSignal(BaseModel):
-    quote: str
-    author: str
-    ago: str
-
-
 class CustomerRisk(BaseModel):
     channel: str
     risk_level: RiskLevel
-    explanation: str
-    most_relevant_signal: MostRelevantSignal

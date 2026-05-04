@@ -34,32 +34,25 @@ Return strict JSON in this shape:
 No prose outside the JSON."""
 
 
-SYNTHESIZE_CUSTOMER_RISK = """You are a customer success advisor. Given the complete state of one customer account (all open/recent tickets, their statuses, recent messages, and metadata), produce:
-
-- risk_level: "low" | "medium" | "high"
-- explanation: one sentence describing WHY they're at this level. Be concrete and reference specific facts (counts, durations, names). No fluff like "improve relationship".
-- most_relevant_signal: { quote, author, ago } — the single message that best captures why this customer is on your radar. Pick from the actual messages provided. "ago" should be a short relative-time string like "8h ago" or "3d ago".
-
-Rules of thumb:
-- HIGH = unresolved bug + no FDE reply, OR exec escalation, OR repeated/reopened issues, OR breaking-language ("blocking", "production down", "churning").
-- MEDIUM = open tickets in motion, FDE engaged, but momentum stalled or signals mixed.
-- LOW = all resolved/active with healthy back-and-forth, or non-actionable chatter only.
-
-Output strict JSON in this shape:
-{
-  "risk_level": "low" | "medium" | "high",
-  "explanation": "...",
-  "most_relevant_signal": { "quote": "...", "author": "...", "ago": "..." }
-}
-
-No prose outside the JSON."""
-
-
 EXTRACT_EVENTS = """You are an assistant that helps a forward-deployed engineer triage Slack channel conversations with enterprise clients.
 
 You will be given only the CLIENT-side messages from a single channel (the engineer's replies are filtered out). The "sender" on each message is a real human name (e.g. "Susan", "Ben") — multiple client teammates often participate in the same thread. Group by TOPIC/CONCERN, not by sender: if Susan reports an issue and Ben follows up with more detail or escalates the same issue, those messages belong to ONE event.
 
 Group the messages into distinct CONCERNS — a single concern may span multiple client messages (initial report → follow-up clarification → additional detail or escalation). Casual chatter or acknowledgements should NOT become events.
+
+What does NOT become an event (drop these):
+- Greetings and sign-offs ("morning everyone", "have a good weekend", "👋", "🎉").
+- Pure acknowledgements ("thanks!", "got it", "👍", "appreciated", "all green now").
+- Compliments and praise on the product, team, or engineer ("the new dashboard looks great", "really enjoyed the blog post", "team loves this feature").
+- Friendly rhetorical curiosity tied to a compliment — questions like "who built these?", "how did you decide X?", "what's next?" when they are conversational riffs rather than actionable asks. The litmus test: would the customer be unhappy if you simply replied with a smiley? If yes → it's a real ask, make a ticket. If no → it's chatter, drop it.
+- Status updates with no implicit ask ("we're testing this on staging today FYI").
+- Off-topic chatter (memes, weekend plans, weather).
+
+What DOES become an event:
+- The client reports something broken, degraded, or unexpected.
+- The client asks a question that genuinely requires you to look something up, decide, or take action (compliance asks, capability checks, integration questions).
+- The client requests a new capability or change.
+- The client expresses concern, frustration, or escalation language tied to a specific issue.
 
 For each concern, emit ONE event with:
 - "heading": a short, specific title (≤ 8 words)
@@ -72,14 +65,14 @@ For each concern, emit ONE event with:
 
 If a single client message raises two distinct concerns, emit two events; the message id may appear in both events' message_ids lists.
 
-Respond with strict JSON:
+Respond with strict JSON. The "type" field MUST be exactly one of the three string values "bug", "feature_request", or "question" — never a pipe-separated string, never anything else. Example shape:
 {
   "events": [
     {
-      "heading": "...",
-      "summary": "...",
-      "type": "bug | feature_request | question",
-      "message_ids": ["msg_xxx", "msg_yyy"]
+      "heading": "Login returns 500",
+      "summary": "Customer reports auth endpoint failing this morning.",
+      "type": "bug",
+      "message_ids": ["msg_001", "msg_002"]
     }
   ]
 }

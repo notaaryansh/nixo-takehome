@@ -9,9 +9,28 @@ from .models import (
     Event,
     EventStatus,
     Message,
+    RiskLevel,
     SeverityLabel,
     TicketFeatures,
 )
+
+
+_SEVERITY_RANK: dict[str, int] = {"low": 0, "medium": 1, "high": 2}
+_RANK_TO_LEVEL: dict[int, RiskLevel] = {0: "low", 1: "medium", 2: "high"}
+
+
+def rollup_risk_level(events: list[Event]) -> RiskLevel:
+    # Only OPEN tickets contribute to customer risk. A customer with all
+    # tickets resolved is, by definition, low risk regardless of the past
+    # severity of those tickets.
+    open_events = [e for e in events if e.status != "resolved"]
+    severities = [
+        e.features.severity_label for e in open_events if e.features is not None
+    ]
+    if not severities:
+        return "low"
+    max_rank = max(_SEVERITY_RANK[s] for s in severities)
+    return _RANK_TO_LEVEL[max_rank]
 from .store import store
 
 
@@ -227,62 +246,21 @@ def _channel_display_name(channel: str) -> str:
     return " ".join(part.capitalize() for part in channel.replace("_", "-").split("-"))
 
 
-async def synthesize_customer(channel: str) -> CustomerRisk | None:
+def synthesize_customer(channel: str) -> CustomerRisk | None:
     events = store.get_events(channel)
     messages = store.get_messages(channel=channel)
     if not events and not messages:
         return None
 
-    now = _dataset_now()
-
-    def fmt_msg(m: Message) -> str:
-        return f"  {m.sender} ({_ago(m.timestamp, now)}): {m.content}"
-
-    ticket_blocks: list[str] = []
-    for e in sorted(events, key=lambda x: x.timestamp):
-        ticket_msgs = sorted(
-            (m for m in messages if m.id in e.message_ids),
-            key=lambda m: m.timestamp,
-        )
-        last_ticket_ts = (
-            max(m.timestamp for m in ticket_msgs) if ticket_msgs else e.timestamp
-        )
-        block = (
-            f"  - [{e.status} | {e.type} | {_ago(e.timestamp, now)} | "
-            f"last activity {_ago(last_ticket_ts, now)}] \"{e.heading}\"\n"
-            f"      {e.summary}\n"
-            f"      Messages:\n"
-            + "\n".join(f"      {fmt_msg(m)}" for m in ticket_msgs)
-        )
-        ticket_blocks.append(block)
-
-    client_count = sum(1 for m in messages if m.role == "client")
-    engineer_count = sum(1 for m in messages if m.role == "engineer")
-
-    user_msg = (
-        f"Customer: {_channel_display_name(channel)}\n"
-        f"Channel: #{channel}\n\n"
-        f"Tickets:\n"
-        + ("\n".join(ticket_blocks) if ticket_blocks else "  (none)")
-        + f"\n\nRecent activity: {client_count} client message"
-        f"{'' if client_count == 1 else 's'}, {engineer_count} engineer "
-        f"message{'' if engineer_count == 1 else 's'} in this channel."
-    )
-
-    raw = await call_llm(
-        prompt=user_msg,
-        system=prompts.SYNTHESIZE_CUSTOMER_RISK,
-        response_format={"type": "json_object"},
-    )
-    parsed = json.loads(raw)
-    return CustomerRisk(channel=channel, **parsed)
+    risk_level = rollup_risk_level(events)
+    return CustomerRisk(channel=channel, risk_level=risk_level)
 
 
-async def synthesize_all_customers() -> list[CustomerRisk]:
+def synthesize_all_customers() -> list[CustomerRisk]:
     channels = sorted({m.channel for m in store.get_messages()})
-    results = await asyncio.gather(*[synthesize_customer(c) for c in channels])
     risks: list[CustomerRisk] = []
-    for channel, risk in zip(channels, results):
+    for channel in channels:
+        risk = synthesize_customer(channel)
         if risk is not None:
             store.set_customer_risk(channel, risk)
             risks.append(risk)

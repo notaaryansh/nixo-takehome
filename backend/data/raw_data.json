@@ -87,6 +87,70 @@
       "content": "Two things in one — the /v2/exports endpoint is timing out on anything above ~50k rows, our nightly sync has been failing for two days now. Also, while you're in there, any chance we could add a date-range filter on that endpoint? Would save us a ton of post-processing on our side.",
       "channel": "vandelay-pilot",
       "timestamp": "2026-05-03T17:05:11Z"
+    },
+    {
+      "id": "msg_n01",
+      "sender": "Susan",
+      "role": "client",
+      "content": "morning everyone 👋",
+      "channel": "acme-corp",
+      "timestamp": "2026-05-02T08:55:10Z"
+    },
+    {
+      "id": "msg_n02",
+      "sender": "Ben",
+      "role": "client",
+      "content": "btw really enjoyed the engineering blog post you all dropped last week, sent it around the team",
+      "channel": "acme-corp",
+      "timestamp": "2026-05-02T15:40:21Z"
+    },
+    {
+      "id": "msg_n03",
+      "sender": "You",
+      "role": "engineer",
+      "content": "Thanks Ben! Glad it landed. We'll have a follow-up post next week on the eval setup.",
+      "channel": "acme-corp",
+      "timestamp": "2026-05-02T15:46:02Z"
+    },
+    {
+      "id": "msg_n04",
+      "sender": "Susan",
+      "role": "client",
+      "content": "have a good weekend folks 🙂",
+      "channel": "acme-corp",
+      "timestamp": "2026-05-02T22:10:55Z"
+    },
+    {
+      "id": "msg_n05",
+      "sender": "Marcus",
+      "role": "client",
+      "content": "thanks for the quick fix earlier, all green on our side now 🙏",
+      "channel": "globex-deployment",
+      "timestamp": "2026-05-02T15:08:30Z"
+    },
+    {
+      "id": "msg_n06",
+      "sender": "Marcus",
+      "role": "client",
+      "content": "btw the new dashboard widgets look great, our exec team was asking who built them",
+      "channel": "globex-deployment",
+      "timestamp": "2026-05-02T16:22:04Z"
+    },
+    {
+      "id": "msg_n07",
+      "sender": "You",
+      "role": "engineer",
+      "content": "Appreciate that — I'll pass it along to the team. Holler if there's anything else.",
+      "channel": "globex-deployment",
+      "timestamp": "2026-05-02T16:30:12Z"
+    },
+    {
+      "id": "msg_n08",
+      "sender": "Marcus",
+      "role": "client",
+      "content": "👍",
+      "channel": "globex-deployment",
+      "timestamp": "2026-05-02T16:32:48Z"
     }
   ]
 }

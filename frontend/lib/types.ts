@@ -1,5 +1,4 @@
 export type RiskLevel = "low" | "medium" | "high";
-export type RiskTrend = "up" | "down" | "flat";
 export type TicketStatus =
   | "needs_reply"
   | "active"
@@ -55,15 +54,7 @@ export type Customer = {
   name: string;
   domain: string;
   plan: PlanTier;
-  csm: string;
   risk: RiskLevel;
-  riskScore: number; // 0-100
-  riskExplanation: string;
-  trend: RiskTrend;
-  recentSignal: string;
-  nextAction: string;
   lastActivityAt: string;
-  joinedAt: string;
-  // Derived in UI from tickets[], but cached here for perf in dummy mode
   ticketCounts: Record<TicketStatus, number>;
 };
