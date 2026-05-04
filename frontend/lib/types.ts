@@ -6,6 +6,7 @@ export type TicketStatus =
   | "resolved";
 export type Severity = "low" | "medium" | "high";
 export type PlanTier = "starter" | "growth" | "enterprise";
+export type TicketType = "bug" | "feature_request" | "question";
 
 export type Author = {
   name: string;
@@ -38,6 +39,7 @@ export type Ticket = {
   customerId: string;
   title: string;
   summary: string;
+  type: TicketType;
   status: TicketStatus;
   severity: Severity;
   ageHours: number;

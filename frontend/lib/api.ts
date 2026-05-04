@@ -170,6 +170,7 @@ export const adaptEventToTicket = (
     customerId: e.channel,
     title: e.heading,
     summary: e.summary,
+    type: e.type,
     status: adaptStatus(e.status),
     severity: f?.severity_label ?? "medium",
     ageHours,

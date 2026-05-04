@@ -5,7 +5,7 @@ const styles: Record<RiskLevel, { bg: string; fg: string; dot: string; label: st
     bg: "bg-[var(--risk-high-bg)]",
     fg: "text-[var(--risk-high)]",
     dot: "bg-[var(--risk-high)]",
-    label: "High risk",
+    label: "High",
   },
   medium: {
     bg: "bg-[var(--risk-med-bg)]",

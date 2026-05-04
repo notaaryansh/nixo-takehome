@@ -10,6 +10,7 @@ import type { Customer, Ticket, TicketFeatures } from "@/lib/types";
 import { NOT_IMPLEMENTED } from "@/lib/api";
 import { StatusPill } from "./status-pill";
 import { SeverityPill } from "./severity-pill";
+import { TypePill } from "./type-pill";
 import { MessageSnapshot } from "./message-snapshot";
 import { NotImplemented } from "./not-implemented";
 import { formatRelativeTime } from "@/lib/format";
@@ -74,6 +75,7 @@ export function TicketDetail({
               <h1 className="truncate text-[15px] font-semibold text-[var(--text)]">
                 {ticket.title}
               </h1>
+              <TypePill type={ticket.type} />
               <StatusPill status={ticket.status} />
             </div>
             <div className="mt-1.5 flex items-center gap-3 text-[11.5px] text-[var(--text-muted)]">
@@ -129,6 +131,10 @@ export function TicketDetail({
                 >
                   {customer.name}
                 </Link>
+              </dd>
+              <dt className="text-[var(--text-dim)]">Type</dt>
+              <dd>
+                <TypePill type={ticket.type} />
               </dd>
               <dt className="text-[var(--text-dim)]">Status</dt>
               <dd>

@@ -10,7 +10,7 @@ export function CustomerList({ customers }: { customers: Customer[] }) {
     <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)]">
       <div className="grid grid-cols-[1fr_120px_220px_140px_28px] items-center gap-4 border-b border-[var(--border)] bg-[var(--bg)] px-4 py-2 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
         <span>Customer</span>
-        <span>Risk</span>
+        <span>Severity</span>
         <span>Open tickets</span>
         <span>Last signal</span>
         <span />

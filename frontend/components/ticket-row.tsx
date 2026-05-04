@@ -3,6 +3,7 @@ import { MessageSquare, Clock, AlertTriangle, ChevronRight } from "lucide-react"
 import type { Ticket } from "@/lib/types";
 import { formatRelativeTime } from "@/lib/format";
 import { StatusPill } from "./status-pill";
+import { TypePill } from "./type-pill";
 
 const severityDot: Record<Ticket["severity"], string> = {
   high: "bg-[var(--risk-high)]",
@@ -35,6 +36,7 @@ export function TicketRow({ ticket }: { ticket: Ticket }) {
           <h4 className="truncate text-[13px] font-medium text-[var(--text)]">
             {ticket.title}
           </h4>
+          <TypePill type={ticket.type} />
           <StatusPill status={ticket.status} />
         </div>
 
