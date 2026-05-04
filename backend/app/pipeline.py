@@ -265,3 +265,119 @@ def synthesize_all_customers() -> list[CustomerRisk]:
             store.set_customer_risk(channel, risk)
             risks.append(risk)
     return risks
+
+
+# ---------- real-time message routing ----------
+
+
+async def process_new_message(message: Message) -> dict:
+    """Route a newly-arrived message: attach to an existing open ticket,
+    create a new ticket, or drop as chatter. Re-runs enrichment on the
+    affected event and updates the customer-risk rollup."""
+
+    # Persist the message first.
+    if store.get_message(message.id) is None:
+        store.messages.append(message)
+
+    open_events = [
+        e
+        for e in store.events
+        if e.channel == message.channel and e.status != "resolved"
+    ]
+
+    if open_events:
+        tickets_listing = "\n".join(
+            f"  - {e.id}: [{e.type}] \"{e.heading}\" — {e.summary}"
+            for e in open_events
+        )
+    else:
+        tickets_listing = "  (no open tickets in this channel)"
+
+    prompt = (
+        f"Channel: #{message.channel}\n\n"
+        f"Open tickets in this channel:\n{tickets_listing}\n\n"
+        f"New message:\n"
+        f"  id: {message.id}\n"
+        f"  sender: {message.sender}\n"
+        f"  role: {message.role}\n"
+        f"  timestamp: {message.timestamp}\n"
+        f"  content: {message.content}"
+    )
+
+    raw = await call_llm(
+        prompt=prompt,
+        system=prompts.ROUTE_MESSAGE,
+        response_format={"type": "json_object"},
+    )
+    parsed = json.loads(raw)
+    decision = parsed.get("decision")
+    reason = parsed.get("reason", "")
+
+    if decision == "drop":
+        return {
+            "action": "dropped",
+            "reason": reason,
+            "message_id": message.id,
+            "event": None,
+        }
+
+    if decision == "attach":
+        event_id = parsed.get("attach_to_event_id")
+        event = next((e for e in store.events if e.id == event_id), None)
+        if event is None:
+            return {
+                "action": "dropped",
+                "reason": f"router said attach to {event_id} but no such event",
+                "message_id": message.id,
+                "event": None,
+            }
+        if message.id not in event.message_ids and message.role == "client":
+            event.message_ids.append(message.id)
+        await _enrich_event(event)
+        risk = synthesize_customer(message.channel)
+        if risk is not None:
+            store.set_customer_risk(message.channel, risk)
+        return {
+            "action": "attached",
+            "reason": reason,
+            "message_id": message.id,
+            "event": event,
+        }
+
+    if decision == "create":
+        if message.role != "client":
+            return {
+                "action": "dropped",
+                "reason": "engineer messages cannot create tickets",
+                "message_id": message.id,
+                "event": None,
+            }
+        new_data = parsed.get("new_event") or {}
+        event = Event(
+            id=store.next_event_id(),
+            heading=new_data.get("heading", "(untitled)"),
+            summary=new_data.get("summary", ""),
+            type=new_data.get("type", "question"),
+            message_ids=[message.id],
+            sender=message.sender,
+            channel=message.channel,
+            timestamp=message.timestamp,
+        )
+        store.add_event(event)
+        await _enrich_event(event)
+        risk = synthesize_customer(message.channel)
+        if risk is not None:
+            store.set_customer_risk(message.channel, risk)
+        return {
+            "action": "created",
+            "reason": reason,
+            "message_id": message.id,
+            "event": event,
+        }
+
+    return {
+        "action": "dropped",
+        "reason": f"unknown decision: {decision}",
+        "message_id": message.id,
+        "event": None,
+    }

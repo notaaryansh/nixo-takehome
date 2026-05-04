@@ -2,8 +2,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from typing import Literal
+
 from .models import CustomerRisk, Event, Message
-from .pipeline import extract_events_for_all_channels, synthesize_all_customers
+from .pipeline import (
+    extract_events_for_all_channels,
+    process_new_message,
+    synthesize_all_customers,
+)
 from .store import store
 
 app = FastAPI(title="Nixo Backend", version="0.1.0")
@@ -48,6 +54,19 @@ def get_events(channel: str | None = None):
 class PipelineRunResult(BaseModel):
     events: list[Event]
     risks: list[CustomerRisk]
+
+
+class IngestResult(BaseModel):
+    action: Literal["created", "attached", "dropped"]
+    reason: str
+    message_id: str
+    event: Event | None = None
+
+
+@app.post("/messages", response_model=IngestResult)
+async def ingest_message(message: Message):
+    result = await process_new_message(message)
+    return IngestResult(**result)
 
 
 @app.post("/pipeline/run", response_model=PipelineRunResult)

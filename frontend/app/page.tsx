@@ -1,4 +1,5 @@
 import { CustomerList } from "@/components/customer-list";
+import { PollRefresh } from "@/components/poll-refresh";
 import { RunButton } from "@/components/run-button";
 import {
   apiGetChannels,
@@ -7,6 +8,7 @@ import {
   apiGetRisks,
   buildCustomers,
 } from "@/lib/api";
+import { riskRank } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +32,13 @@ export default async function Home() {
   }
 
   const customerData = buildCustomers(channels, events, messages, nowMs, risks);
-  const customers = customerData.map((c) => c.customer);
+  const customers = customerData
+    .map((c) => c.customer)
+    .sort((a, b) => {
+      if (riskRank[a.risk] !== riskRank[b.risk])
+        return riskRank[a.risk] - riskRank[b.risk];
+      return a.name.localeCompare(b.name);
+    });
   const totalEvents = events.length;
   const eventsRun = totalEvents > 0;
 
@@ -58,6 +66,7 @@ export default async function Home() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
+      <PollRefresh intervalMs={5000} />
       <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
         <div>
           <h1 className="text-[15px] font-semibold text-[var(--text)]">
@@ -68,7 +77,7 @@ export default async function Home() {
               <span>
                 {customers.length} customer{customers.length === 1 ? "" : "s"}
               </span>
-              {openCount > 0 ? (
+              {openCount > 0 || totals.resolved > 0 ? (
                 <>
                   <span className="text-[var(--text-dim)]">·</span>
                   {totals.needs_reply > 0 && (
@@ -87,6 +96,12 @@ export default async function Home() {
                     <span className="inline-flex items-center gap-1">
                       <span className="text-[var(--risk-med)]">●</span>
                       {totals.waiting_customer} waiting
+                    </span>
+                  )}
+                  {totals.resolved > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-[var(--risk-low)]">●</span>
+                      {totals.resolved} resolved
                     </span>
                   )}
                 </>

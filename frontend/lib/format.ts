@@ -1,4 +1,4 @@
-import type { TicketStatus } from "./types";
+import type { RiskLevel, Severity, TicketStatus } from "./types";
 
 export const formatRelativeTime = (iso: string, nowMs?: number) => {
   const now = nowMs ?? Date.UTC(2026, 4, 3, 14, 0, 0);
@@ -34,4 +34,16 @@ export const statusRank: Record<TicketStatus, number> = {
   active: 1,
   waiting_customer: 2,
   resolved: 3,
+};
+
+export const riskRank: Record<RiskLevel, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
+
+export const severityRank: Record<Severity, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
 };

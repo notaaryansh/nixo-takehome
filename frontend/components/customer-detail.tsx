@@ -4,7 +4,7 @@ import type { Customer, Ticket } from "@/lib/types";
 import { RiskBadge } from "./risk-badge";
 import { CustomerAvatar } from "./customer-avatar";
 import { TicketRow } from "./ticket-row";
-import { formatRelativeTime, statusRank } from "@/lib/format";
+import { formatRelativeTime, severityRank, statusRank } from "@/lib/format";
 
 export function CustomerDetail({
   customer,
@@ -14,6 +14,8 @@ export function CustomerDetail({
   tickets: Ticket[];
 }) {
   const sortedTickets = [...tickets].sort((a, b) => {
+    if (severityRank[a.severity] !== severityRank[b.severity])
+      return severityRank[a.severity] - severityRank[b.severity];
     if (statusRank[a.status] !== statusRank[b.status])
       return statusRank[a.status] - statusRank[b.status];
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();

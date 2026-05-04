@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Hash,
   Send,
@@ -9,9 +10,14 @@ import {
   Paperclip,
   ChevronUp,
   Plus,
+  PlusCircle,
+  Link2,
+  Minus,
+  Loader2,
 } from "lucide-react";
 import type { Message, Author } from "@/lib/types";
-import type { ChannelSummary } from "@/lib/api";
+import type { BackendIngestResult, ChannelSummary } from "@/lib/api";
+import { apiPostMessage } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
 
 const palette = ["#B6E3F4", "#C0AEDE", "#FFE0B2", "#C0F0E8", "#FFD5DC", "#E8D5F5"];
@@ -111,8 +117,11 @@ export function MessageStream({
   channel: ChannelSummary;
   messages: Message[];
 }) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [text, setText] = useState("");
+  const [pending, setPending] = useState(false);
+  const [lastIngest, setLastIngest] = useState<BackendIngestResult | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [personas, setPersonas] = useState<Persona[]>(() =>
@@ -128,6 +137,7 @@ export function MessageStream({
   useEffect(() => {
     setMessages(initialMessages);
     setText("");
+    setLastIngest(null);
     const next = buildPersonas(initialMessages);
     setPersonas(next);
     const firstClient = next.find((p) => !p.isInternal);
@@ -158,12 +168,17 @@ export function MessageStream({
     setCurrentHandle(handle);
   };
 
-  const send = () => {
+  const send = async () => {
     const trimmed = text.trim();
-    if (!trimmed) return;
-    const newMsg: Message = {
-      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      ticketId: "local",
+    if (!trimmed || pending) return;
+
+    const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const ts = new Date().toISOString();
+
+    // Optimistic UI: render immediately.
+    const optimistic: Message = {
+      id,
+      ticketId: "pending",
       customerId: channel.customerId,
       author: {
         name: currentPersona.name,
@@ -172,10 +187,36 @@ export function MessageStream({
       },
       text: trimmed,
       channel: `#${channel.name}`,
-      ts: new Date().toISOString(),
+      ts,
     };
-    setMessages((prev) => [...prev, newMsg]);
+    setMessages((prev) => [...prev, optimistic]);
     setText("");
+    setPending(true);
+    setLastIngest(null);
+
+    try {
+      const result = await apiPostMessage({
+        id,
+        sender: currentPersona.name,
+        role: currentPersona.isInternal ? "engineer" : "client",
+        content: trimmed,
+        channel: channel.id,
+        timestamp: ts,
+      });
+      setLastIngest(result);
+      // Refresh server data so the dashboard reflects new/updated tickets.
+      router.refresh();
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      setLastIngest({
+        action: "dropped",
+        reason: `ingest failed: ${reason}`,
+        message_id: id,
+        event: null,
+      });
+    } finally {
+      setPending(false);
+    }
   };
 
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -312,15 +353,73 @@ export function MessageStream({
           <button
             type="button"
             onClick={send}
-            disabled={!text.trim()}
+            disabled={!text.trim() || pending}
             className="ml-1 rounded bg-[var(--accent)] p-1.5 text-white transition-colors hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:bg-[var(--surface)] disabled:text-[var(--text-dim)]"
             aria-label="Send message"
           >
-            <Send size={12} />
+            {pending ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Send size={12} />
+            )}
           </button>
         </div>
+        {(pending || lastIngest) && (
+          <IngestStatus pending={pending} result={lastIngest} />
+        )}
       </div>
     </section>
+  );
+}
+
+function IngestStatus({
+  pending,
+  result,
+}: {
+  pending: boolean;
+  result: BackendIngestResult | null;
+}) {
+  if (pending) {
+    return (
+      <div className="mt-1.5 flex items-center gap-1.5 px-1 text-[10.5px] text-[var(--text-dim)]">
+        <Loader2 size={10} className="animate-spin" />
+        Routing message…
+      </div>
+    );
+  }
+  if (!result) return null;
+
+  const config = {
+    created: {
+      icon: <PlusCircle size={11} />,
+      label: "Created ticket",
+      fg: "text-[var(--risk-low)]",
+    },
+    attached: {
+      icon: <Link2 size={11} />,
+      label: "Attached to ticket",
+      fg: "text-[#7AB0F5]",
+    },
+    dropped: {
+      icon: <Minus size={11} />,
+      label: "Dropped",
+      fg: "text-[var(--text-dim)]",
+    },
+  }[result.action];
+
+  return (
+    <div className="mt-1.5 flex items-center gap-1.5 px-1 text-[10.5px]">
+      <span className={`inline-flex items-center gap-1 ${config.fg}`}>
+        {config.icon}
+        {config.label}
+      </span>
+      {result.event && (
+        <span className="text-[var(--text)] truncate">
+          {result.event.heading}
+        </span>
+      )}
+      <span className="truncate text-[var(--text-dim)]">· {result.reason}</span>
+    </div>
   );
 }
 

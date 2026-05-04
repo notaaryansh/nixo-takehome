@@ -94,7 +94,7 @@
       "role": "client",
       "content": "morning everyone 👋",
       "channel": "acme-corp",
-      "timestamp": "2026-05-02T08:55:10Z"
+      "timestamp": "2026-04-30T08:55:10Z"
     },
     {
       "id": "msg_n02",
@@ -102,7 +102,7 @@
       "role": "client",
       "content": "btw really enjoyed the engineering blog post you all dropped last week, sent it around the team",
       "channel": "acme-corp",
-      "timestamp": "2026-05-02T15:40:21Z"
+      "timestamp": "2026-04-30T15:40:21Z"
     },
     {
       "id": "msg_n03",
@@ -110,7 +110,7 @@
       "role": "engineer",
       "content": "Thanks Ben! Glad it landed. We'll have a follow-up post next week on the eval setup.",
       "channel": "acme-corp",
-      "timestamp": "2026-05-02T15:46:02Z"
+      "timestamp": "2026-04-30T15:46:02Z"
     },
     {
       "id": "msg_n04",
@@ -118,7 +118,7 @@
       "role": "client",
       "content": "have a good weekend folks 🙂",
       "channel": "acme-corp",
-      "timestamp": "2026-05-02T22:10:55Z"
+      "timestamp": "2026-04-30T22:10:55Z"
     },
     {
       "id": "msg_n05",

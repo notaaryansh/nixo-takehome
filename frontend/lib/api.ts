@@ -103,6 +103,22 @@ export const apiGetCustomerRisk = (channel: string) =>
     `/customers/${encodeURIComponent(channel)}/risk`,
   );
 
+export type BackendIngestResult = {
+  action: "created" | "attached" | "dropped";
+  reason: string;
+  message_id: string;
+  event: BackendEvent | null;
+};
+
+export const apiPostMessage = (
+  msg: BackendMessage,
+): Promise<BackendIngestResult> =>
+  fetchJson<BackendIngestResult>("/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(msg),
+  });
+
 // ---------- adapters: backend → UI types ----------
 
 const statusMap: Record<BackendEventStatus, TicketStatus> = {
