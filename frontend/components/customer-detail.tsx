@@ -63,14 +63,6 @@ export function CustomerDetail({
               <span>Last activity {formatRelativeTime(customer.lastActivityAt)}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5 text-[11.5px] text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]">
-              Open in Slack
-            </button>
-            <button className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-medium text-white hover:bg-[var(--accent-soft)]">
-              Take action
-            </button>
-          </div>
         </div>
       </div>
 
@@ -89,6 +81,20 @@ export function CustomerDetail({
             )}
           </span>
         </div>
+
+        {sortedTickets.length > 0 && (
+          <div className="border-b border-[var(--border)] px-6">
+            <div className="grid grid-cols-[1fr_120px_160px_72px_120px_18px] items-center gap-4 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
+              <span>Ticket</span>
+              <span>Severity</span>
+              <span>Status</span>
+              <span>Msgs</span>
+              <span className="text-right">Updated</span>
+              <span />
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-6 py-4">
           {sortedTickets.length === 0 ? (
             <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-[var(--border)] text-[11px] text-[var(--text-dim)]">

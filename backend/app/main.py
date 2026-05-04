@@ -78,14 +78,21 @@ async def run_pipeline():
     return PipelineRunResult(events=events, risks=risks)
 
 
+@app.post("/pipeline/reenrich", response_model=PipelineRunResult)
+async def reenrich_pipeline():
+    """Re-runs assign_status + extract_features on existing events without
+    re-extracting. Useful after a prompt change when you don't want to lose
+    in-memory state (messages that arrived via POST /messages but aren't in
+    raw_data.json)."""
+    import asyncio as _asyncio
+
+    from .pipeline import _enrich_event
+
+    await _asyncio.gather(*[_enrich_event(e) for e in store.events])
+    risks = synthesize_all_customers()
+    return PipelineRunResult(events=store.events, risks=risks)
+
+
 @app.get("/risks", response_model=list[CustomerRisk])
 def get_risks():
     return store.get_all_customer_risks()
-
-
-@app.get("/customers/{channel}/risk", response_model=CustomerRisk)
-def get_customer_risk(channel: str):
-    risk = store.get_customer_risk(channel)
-    if risk is None:
-        raise HTTPException(status_code=404, detail="Customer risk not synthesized")
-    return risk

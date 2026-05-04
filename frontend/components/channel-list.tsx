@@ -1,35 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Hash, Plus } from "lucide-react";
 import type { ChannelSummary } from "@/lib/api";
-import { channelDisplayName } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
-import { slugifyChannel, useExtraChannels } from "@/lib/local-channels";
+
+const slugifyChannel = (raw: string) =>
+  raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 export function ChannelList({ channels }: { channels: ChannelSummary[] }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { extras, add } = useExtraChannels();
-
-  const allChannels = useMemo<ChannelSummary[]>(() => {
-    const backendIds = new Set(channels.map((c) => c.id));
-    const extraSummaries: ChannelSummary[] = extras
-      .filter((e) => !backendIds.has(e.id))
-      .map((e) => ({
-        id: e.id,
-        name: e.id,
-        customerId: e.id,
-        customerName: channelDisplayName(e.id),
-        lastTs: e.createdAt,
-        preview: "(new channel)",
-      }));
-    return [...channels, ...extraSummaries].sort((a, b) =>
-      b.lastTs.localeCompare(a.lastTs),
-    );
-  }, [channels, extras]);
 
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
@@ -37,7 +24,6 @@ export function ChannelList({ channels }: { channels: ChannelSummary[] }) {
   const submitAdd = () => {
     const slug = slugifyChannel(draft);
     if (!slug) return;
-    add(slug);
     setDraft("");
     setAdding(false);
     router.push(`/messages/${slug}`);
@@ -48,7 +34,7 @@ export function ChannelList({ channels }: { channels: ChannelSummary[] }) {
       <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-3">
         <span className="text-[12.5px] font-semibold text-[var(--text)]">Slack</span>
         <span className="text-[10.5px] text-[var(--text-dim)]">
-          {allChannels.length} channels
+          {channels.length} channels
         </span>
       </div>
 
@@ -98,7 +84,7 @@ export function ChannelList({ channels }: { channels: ChannelSummary[] }) {
       )}
 
       <nav className="flex-1 overflow-y-auto px-2 pb-3">
-        {allChannels.map((c) => {
+        {channels.map((c) => {
           const href = `/messages/${c.id}`;
           const active = pathname === href;
           return (

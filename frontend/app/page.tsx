@@ -40,16 +40,7 @@ export default async function Home() {
       return a.name.localeCompare(b.name);
     });
 
-  const hour = new Date().getHours();
-  const partOfDay =
-    hour < 5
-      ? "evening"
-      : hour < 12
-        ? "morning"
-        : hour < 18
-          ? "afternoon"
-          : "evening";
-  const greeting = `Good ${partOfDay}, Priya`;
+  const greeting = "Welcome to Nixo, Priya";
 
   const totals = customers.reduce(
     (acc, c) => ({

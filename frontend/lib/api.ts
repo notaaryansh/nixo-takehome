@@ -98,11 +98,6 @@ export const apiRunPipeline = () =>
 export const apiGetRisks = () =>
   fetchJson<BackendCustomerRisk[]>("/risks");
 
-export const apiGetCustomerRisk = (channel: string) =>
-  fetchJson<BackendCustomerRisk>(
-    `/customers/${encodeURIComponent(channel)}/risk`,
-  );
-
 export type BackendIngestResult = {
   action: "created" | "attached" | "dropped";
   reason: string;

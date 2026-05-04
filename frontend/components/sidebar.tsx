@@ -57,7 +57,7 @@ export function Sidebar() {
           PS
         </div>
         <div className="flex flex-1 flex-col leading-tight">
-          <span className="text-[11.5px] text-[var(--text)]">Priya Shah</span>
+          <span className="text-[11.5px] text-[var(--text)]">Priya</span>
           <span className="text-[10px] text-[var(--text-dim)]">FDE · online</span>
         </div>
       </div>

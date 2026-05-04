@@ -45,11 +45,9 @@ export function PipelineGate({
     return (
       <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)]">
         <Loader2 size={20} className="animate-spin text-[var(--accent)]" />
-        <span className="text-[12.5px] text-[var(--text)]">
-          Running pipeline…
-        </span>
+        <span className="text-[12.5px] text-[var(--text)]">Initializing</span>
         <span className="text-[10.5px] text-[var(--text-dim)]">
-          Extracting events, scoring features, computing risk
+          Setting up your workspace
         </span>
       </div>
     );

@@ -10,13 +10,10 @@ import {
   Paperclip,
   ChevronUp,
   Plus,
-  PlusCircle,
-  Link2,
-  Minus,
   Loader2,
 } from "lucide-react";
 import type { Message, Author } from "@/lib/types";
-import type { BackendIngestResult, ChannelSummary } from "@/lib/api";
+import type { ChannelSummary } from "@/lib/api";
 import { apiPostMessage } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
 
@@ -121,7 +118,6 @@ export function MessageStream({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
-  const [lastIngest, setLastIngest] = useState<BackendIngestResult | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [personas, setPersonas] = useState<Persona[]>(() =>
@@ -137,7 +133,6 @@ export function MessageStream({
   useEffect(() => {
     setMessages(initialMessages);
     setText("");
-    setLastIngest(null);
     const next = buildPersonas(initialMessages);
     setPersonas(next);
     const firstClient = next.find((p) => !p.isInternal);
@@ -192,10 +187,9 @@ export function MessageStream({
     setMessages((prev) => [...prev, optimistic]);
     setText("");
     setPending(true);
-    setLastIngest(null);
 
     try {
-      const result = await apiPostMessage({
+      await apiPostMessage({
         id,
         sender: currentPersona.name,
         role: currentPersona.isInternal ? "engineer" : "client",
@@ -203,17 +197,10 @@ export function MessageStream({
         channel: channel.id,
         timestamp: ts,
       });
-      setLastIngest(result);
       // Refresh server data so the dashboard reflects new/updated tickets.
       router.refresh();
     } catch (e) {
-      const reason = e instanceof Error ? e.message : String(e);
-      setLastIngest({
-        action: "dropped",
-        reason: `ingest failed: ${reason}`,
-        message_id: id,
-        event: null,
-      });
+      console.error("Failed to ingest message:", e);
     } finally {
       setPending(false);
     }
@@ -364,62 +351,8 @@ export function MessageStream({
             )}
           </button>
         </div>
-        {(pending || lastIngest) && (
-          <IngestStatus pending={pending} result={lastIngest} />
-        )}
       </div>
     </section>
-  );
-}
-
-function IngestStatus({
-  pending,
-  result,
-}: {
-  pending: boolean;
-  result: BackendIngestResult | null;
-}) {
-  if (pending) {
-    return (
-      <div className="mt-1.5 flex items-center gap-1.5 px-1 text-[10.5px] text-[var(--text-dim)]">
-        <Loader2 size={10} className="animate-spin" />
-        Routing message…
-      </div>
-    );
-  }
-  if (!result) return null;
-
-  const config = {
-    created: {
-      icon: <PlusCircle size={11} />,
-      label: "Created ticket",
-      fg: "text-[var(--risk-low)]",
-    },
-    attached: {
-      icon: <Link2 size={11} />,
-      label: "Attached to ticket",
-      fg: "text-[#7AB0F5]",
-    },
-    dropped: {
-      icon: <Minus size={11} />,
-      label: "Dropped",
-      fg: "text-[var(--text-dim)]",
-    },
-  }[result.action];
-
-  return (
-    <div className="mt-1.5 flex items-center gap-1.5 px-1 text-[10.5px]">
-      <span className={`inline-flex items-center gap-1 ${config.fg}`}>
-        {config.icon}
-        {config.label}
-      </span>
-      {result.event && (
-        <span className="text-[var(--text)] truncate">
-          {result.event.heading}
-        </span>
-      )}
-      <span className="truncate text-[var(--text-dim)]">· {result.reason}</span>
-    </div>
   );
 }
 
