@@ -180,8 +180,23 @@ You output TWO things in one JSON response:
 1. **status** — pick exactly one:
    - "needs_reply" — the client raised this and there is no topically-relevant engineer response after it. We owe them a reply.
    - "active" — the engineer has responded on-topic and the conversation is ongoing (no clear resolution yet, no outstanding ask back to the client).
-   - "waiting_on_customer" — the engineer's most recent on-topic message asks the client for info / a decision / approval, and the client has not responded.
+   - "waiting_on_customer" — the engineer's most recent on-topic message is an EXPLICIT ASK to the client, AND no client message has been posted on-topic since.
    - "resolved" — the concern has been clearly addressed, fixed, confirmed, or closed out in the on-topic exchange.
+
+CRITICAL rules for "waiting_on_customer" — read carefully, this is the most-misclassified status:
+
+a) The engineer's last on-topic message must be a *direct ask* aimed at the client. Things that DO count:
+   - "Can you share the tenant id?"
+   - "Please confirm whether you're still seeing this."
+   - "Can you check on your side and let me know?"
+   - "Do you want option A or option B?"
+
+b) Things that DO NOT count as an ask, even though they look related:
+   - Status updates: "Looking into this", "investigating now", "we're on it".
+   - Forward-looking commitments by the engineer: "Will follow up with a postmortem", "I'll report back this afternoon", "we'll send the docs once they're ready". The engineer is committing to do something later — they are not asking the client for anything.
+   - Action announcements: "Rolling out the fix now", "draining the bad replica".
+
+c) ORDERING RULE (hard constraint): if the most recent on-topic message in the context is from the CLIENT (any non-"You" sender), the status CANNOT be "waiting_on_customer". The client is talking — by definition we are not waiting on them. In that situation, the status is either "needs_reply" (no engineer response after) or "active" (engineer responded earlier and the client is following up).
 
 2. **next_step** — ONE specific thing the engineer should do next on THIS ticket. Must be concrete and doable today. Bad: "follow up". Good: "Reply to Susan with the OOM profiling results and confirm whether the worker memory bump from 16GB held." If the ticket is fully resolved, set next_step to a short closure note like "Confirm with Tom and close the ticket." Reference the actual people and specifics from the messages.
 
@@ -228,6 +243,15 @@ Context:
   [09:15] You: ok memory bump deployed, retry the run
 Output: {"status": "needs_reply", "next_step": "Reply on the redaction question specifically — confirm whether per-tenant redaction is supported today, and if not, file a feature request."}
 (The 09:15 engineer message is about the OOM bug, not about the redaction question. The redaction question has no on-topic reply.)
+
+Example 6 — engineer made a forward-looking commitment, client escalated after
+Event: msg_F (bug) "intermittent 502s on /v2/score"
+Context:
+  [11:08] Priya: We're seeing intermittent 502s from /v2/score, ~3% of traffic.
+  [11:15] You: Thanks for flagging — draining a bad replica now and spinning up a replacement. Will follow up with a postmortem once we have root cause.
+  [02:39 next day] Priya: still seeing this getting worse, didn't get your reply yet, escalating.
+Output: {"status": "needs_reply", "next_step": "Reply to Priya immediately with current investigation status, the replacement-replica result, and an ETA for root cause."}
+(The 11:15 engineer message is a status update + forward-looking commitment, NOT an ask. The most recent on-topic message is from the client and it's an escalation. By the ordering rule, this CANNOT be waiting_on_customer — it is needs_reply.)
 
 Respond with strict JSON in this shape:
 {
