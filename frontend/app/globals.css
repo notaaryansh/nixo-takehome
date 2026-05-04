@@ -18,13 +18,22 @@
   --accent-soft: #E85AA8;
   --accent-bg: rgba(196, 40, 126, 0.12);
 
-  /* Risk */
+  /* Risk (used by status pills — resolved stays green for "done") */
   --risk-low: #4ADE80;
   --risk-low-bg: rgba(74, 222, 128, 0.10);
   --risk-med: #F5C04A;
   --risk-med-bg: rgba(245, 192, 74, 0.10);
   --risk-high: #F2545B;
   --risk-high-bg: rgba(242, 84, 91, 0.10);
+
+  /* Severity (red → orange → yellow gradient — used by severity pills,
+     customer risk pills, and the ticket-row left stripe) */
+  --severity-high: #F2545B;
+  --severity-high-bg: rgba(242, 84, 91, 0.10);
+  --severity-medium: #F39C12;
+  --severity-medium-bg: rgba(243, 156, 18, 0.12);
+  --severity-low: #F5C04A;
+  --severity-low-bg: rgba(245, 192, 74, 0.10);
 
   /* Stage tints */
   --stage-discovery: #B6E3F4;

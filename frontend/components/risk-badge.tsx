@@ -2,21 +2,21 @@ import type { RiskLevel } from "@/lib/types";
 
 const styles: Record<RiskLevel, { bg: string; fg: string; dot: string; label: string }> = {
   high: {
-    bg: "bg-[var(--risk-high-bg)]",
-    fg: "text-[var(--risk-high)]",
-    dot: "bg-[var(--risk-high)]",
+    bg: "bg-[var(--severity-high-bg)]",
+    fg: "text-[var(--severity-high)]",
+    dot: "bg-[var(--severity-high)]",
     label: "High",
   },
   medium: {
-    bg: "bg-[var(--risk-med-bg)]",
-    fg: "text-[var(--risk-med)]",
-    dot: "bg-[var(--risk-med)]",
+    bg: "bg-[var(--severity-medium-bg)]",
+    fg: "text-[var(--severity-medium)]",
+    dot: "bg-[var(--severity-medium)]",
     label: "Medium",
   },
   low: {
-    bg: "bg-[var(--risk-low-bg)]",
-    fg: "text-[var(--risk-low)]",
-    dot: "bg-[var(--risk-low)]",
+    bg: "bg-[var(--severity-low-bg)]",
+    fg: "text-[var(--severity-low)]",
+    dot: "bg-[var(--severity-low)]",
     label: "Low",
   },
 };

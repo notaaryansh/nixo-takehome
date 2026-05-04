@@ -50,6 +50,7 @@ export type BackendEvent = {
   sender: string;
   channel: string;
   timestamp: string;
+  updated_at: string | null;
   status: BackendEventStatus | null;
   next_step: string | null;
   features: BackendTicketFeatures | null;
@@ -157,7 +158,7 @@ export const adaptEventToTicket = (
   const ageMs = nowMs - new Date(e.timestamp).getTime();
   const ageHours = Math.max(0, Math.floor(ageMs / 3_600_000));
 
-  const lastTs = messages[messages.length - 1]?.ts ?? e.timestamp;
+  const lastMsgTs = messages[messages.length - 1]?.ts ?? e.timestamp;
 
   const f = e.features;
   return {
@@ -171,7 +172,7 @@ export const adaptEventToTicket = (
     ageHours,
     stalled: false,
     createdAt: e.timestamp,
-    updatedAt: lastTs,
+    updatedAt: e.updated_at ?? lastMsgTs,
     messages,
     nextStep: e.next_step ?? NOT_IMPLEMENTED,
     features: f

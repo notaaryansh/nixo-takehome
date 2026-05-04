@@ -169,7 +169,7 @@ export function TicketDetail({
           <div className="flex items-baseline justify-between border-b border-[var(--border)] px-5 py-3">
             <div>
               <h2 className="text-[12.5px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                Source of truth
+                Reference
               </h2>
               <p className="mt-0.5 text-[10.5px] text-[var(--text-dim)]">
                 Messages this ticket was inferred from. Click <span className="text-[var(--text-muted)]">View in Slack</span> to jump to the original.

@@ -12,15 +12,21 @@ export function TicketRow({ ticket }: { ticket: Ticket }) {
       ? `${Math.floor(ticket.ageHours / 24)}d old`
       : `${ticket.ageHours}h old`;
 
-  const isHigh = ticket.severity === "high";
+  const stripeVar: Record<typeof ticket.severity, string> = {
+    high: "var(--severity-high)",
+    medium: "var(--severity-medium)",
+    low: "var(--severity-low)",
+  };
+  const stripeColor =
+    ticket.status === "resolved"
+      ? "var(--risk-low)"
+      : stripeVar[ticket.severity];
 
   return (
     <Link
       href={`/customers/${ticket.customerId}/tickets/${ticket.id}`}
-      style={isHigh ? { borderColor: "var(--risk-high)" } : undefined}
-      className={`group grid grid-cols-[1fr_120px_160px_72px_120px_18px] items-center gap-4 cursor-pointer rounded-md border bg-[var(--bg-elevated)] px-4 py-3 transition-colors hover:bg-[var(--surface-hover)] ${
-        isHigh ? "" : "border-[var(--border)] hover:border-[var(--border-strong)]"
-      }`}
+      style={{ boxShadow: `inset 3px 0 0 0 ${stripeColor}` }}
+      className="group grid grid-cols-[1fr_120px_160px_72px_120px_18px] items-center gap-4 cursor-pointer rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]"
     >
       {/* col 1 — title + summary */}
       <div className="min-w-0">

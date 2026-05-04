@@ -1,7 +1,7 @@
 import type { RiskLevel, Severity, TicketStatus } from "./types";
 
 export const formatRelativeTime = (iso: string, nowMs?: number) => {
-  const now = nowMs ?? Date.UTC(2026, 4, 3, 14, 0, 0);
+  const now = nowMs ?? Date.now();
   const ms = now - new Date(iso).getTime();
   const minutes = Math.floor(ms / 60000);
   const hours = Math.floor(minutes / 60);

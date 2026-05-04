@@ -37,6 +37,7 @@ class Event(BaseModel):
     sender: str
     channel: str
     timestamp: str
+    updated_at: str | None = None
     status: EventStatus | None = None
     next_step: str | None = None
     features: TicketFeatures | None = None

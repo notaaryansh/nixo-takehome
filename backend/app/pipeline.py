@@ -230,6 +230,9 @@ async def _enrich_event(event: Event) -> None:
     event.status = status
     event.next_step = next_step
     event.features = features
+    event.updated_at = (
+        datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    )
 
 
 async def extract_events_for_all_channels() -> list[Event]:

@@ -2,21 +2,21 @@ import type { Severity } from "@/lib/types";
 
 const styles: Record<Severity, { fg: string; bg: string; dot: string; label: string }> = {
   high: {
-    fg: "text-[var(--risk-high)]",
-    bg: "bg-[var(--risk-high-bg)]",
-    dot: "bg-[var(--risk-high)]",
+    fg: "text-[var(--severity-high)]",
+    bg: "bg-[var(--severity-high-bg)]",
+    dot: "bg-[var(--severity-high)]",
     label: "High",
   },
   medium: {
-    fg: "text-[var(--risk-med)]",
-    bg: "bg-[var(--risk-med-bg)]",
-    dot: "bg-[var(--risk-med)]",
+    fg: "text-[var(--severity-medium)]",
+    bg: "bg-[var(--severity-medium-bg)]",
+    dot: "bg-[var(--severity-medium)]",
     label: "Medium",
   },
   low: {
-    fg: "text-[var(--risk-low)]",
-    bg: "bg-[var(--risk-low-bg)]",
-    dot: "bg-[var(--risk-low)]",
+    fg: "text-[var(--severity-low)]",
+    bg: "bg-[var(--severity-low-bg)]",
+    dot: "bg-[var(--severity-low)]",
     label: "Low",
   },
 };
