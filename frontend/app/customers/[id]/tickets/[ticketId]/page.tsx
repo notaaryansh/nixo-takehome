@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { TicketDetail } from "@/components/ticket-detail";
+import { PollRefresh } from "@/components/poll-refresh";
 import {
   apiGetChannels,
   apiGetEvents,
@@ -35,5 +36,10 @@ export default async function TicketPage({
   const ticket = data.tickets.find((t) => t.id === ticketId);
   if (!ticket) notFound();
 
-  return <TicketDetail customer={data.customer} ticket={ticket} />;
+  return (
+    <>
+      <PollRefresh intervalMs={5000} />
+      <TicketDetail customer={data.customer} ticket={ticket} />
+    </>
+  );
 }

@@ -1,6 +1,6 @@
 import { CustomerList } from "@/components/customer-list";
+import { PipelineGate } from "@/components/pipeline-gate";
 import { PollRefresh } from "@/components/poll-refresh";
-import { RunButton } from "@/components/run-button";
 import {
   apiGetChannels,
   apiGetEvents,
@@ -39,8 +39,6 @@ export default async function Home() {
         return riskRank[a.risk] - riskRank[b.risk];
       return a.name.localeCompare(b.name);
     });
-  const totalEvents = events.length;
-  const eventsRun = totalEvents > 0;
 
   const hour = new Date().getHours();
   const partOfDay =
@@ -114,7 +112,6 @@ export default async function Home() {
             </p>
           )}
         </div>
-        <RunButton />
       </div>
 
       {error && (
@@ -124,23 +121,17 @@ export default async function Home() {
       )}
 
       <div className="px-6 py-6">
-        {customers.length === 0 ? (
-          <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-[var(--border)] text-[12px] text-[var(--text-dim)]">
-            {error
-              ? "Couldn’t load data from backend."
-              : "No customers yet. Click Run pipeline to extract events."}
-          </div>
-        ) : (
-          <>
-            {!eventsRun && (
-              <p className="mb-3 text-[11.5px] text-[var(--text-dim)]">
-                Channels loaded but no events yet — click Run pipeline to
-                extract them.
-              </p>
-            )}
+        <PipelineGate shouldRun={events.length === 0 && !error}>
+          {customers.length === 0 ? (
+            <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-[var(--border)] text-[12px] text-[var(--text-dim)]">
+              {error
+                ? "Couldn’t load data from backend."
+                : "No customers yet."}
+            </div>
+          ) : (
             <CustomerList customers={customers} />
-          </>
-        )}
+          )}
+        </PipelineGate>
       </div>
     </div>
   );

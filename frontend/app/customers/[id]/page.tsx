@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { CustomerDetail } from "@/components/customer-detail";
+import { PollRefresh } from "@/components/poll-refresh";
 import {
   apiGetChannels,
   apiGetEvents,
@@ -32,5 +33,10 @@ export default async function CustomerPage({
   );
   if (!data) notFound();
 
-  return <CustomerDetail customer={data.customer} tickets={data.tickets} />;
+  return (
+    <>
+      <PollRefresh intervalMs={5000} />
+      <CustomerDetail customer={data.customer} tickets={data.tickets} />
+    </>
+  );
 }
